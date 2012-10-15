@@ -238,3 +238,318 @@
 ;3.0000000000000977
 
 
+;; Ex. 1.9
+
+; (define (+ a b)
+;   (if (= a 0) b (inc (+ (dec a) b))))
+
+; for (+ 4 5), this generates -
+; (+ 4 5)
+; (inc (+ 3 5))
+; (inc (inc (+ 2 5)))
+; (inc (inc (inc (+ 1 5))))
+; (inc (inc (inc (inc (+ 0 5)))))
+; (inc (inc (inc (inc 5))))
+; (inc (inc (inc 6)))
+; (inc (inc 7))
+; (inc 8)
+; 9
+
+; this definition of + is linear-recursive, characterized by deferred
+; computations, resulting in expansion-compaction
+
+; (define (+ a b)
+;   (if (= a 0) b (+ (dec a) (inc b))))
+
+; by looking at it, this would generate a process of which, the state
+; at any point of time can be determined by two variables alone,
+; making it linear-iterative process
+
+
+;; Ex. 1.10
+
+(define (A x y)
+  (cond ((= y 0) 0)
+        ((= x 0) (* 2 y))
+        ((= y 1) 2)
+        (else (A (- x 1)
+                 (A x (- y 1))))))
+
+(A 1 10)
+; 1024
+
+(A 2 4)
+; 65536
+
+(A 3 3)
+; 65536
+
+(define (f n) (A 0 n))
+(define (g n) (A 1 n))
+(define (h n) (A 2 n))
+(define (k n) (* 5 n n))
+
+; by observation -
+
+; (f 0) = 0, (f 1) = 2, (f 2) = 4, (f 3) = 6 and so on
+; thus, f = 2n
+
+; (g 0) = 0, (g 1) = 2, (g 2) = 4, (g 3) = 8, (g 4) = 16, (g 5) = 32 and so on
+; thus, g = 2^n
+
+; (h 0) = 0, (h 1) = 2, (h 2) = 4, (h 3) = 16, (h 4) = 65536, (h 5) = huge, ...
+
+; 0  0     = 0     = 0
+; 1  2     = 2^1   = 2^(2^0) = 2^ h(0)
+; 2  4     = 2^2   = 2^(2^1) = 2^ h(1)
+; 3  16    = 2^4   = 2^(2^2) = 2^ h(2)
+; 4  65536 = 2^16  = 2^(2^4) = 2^ h(3)
+
+; h(n) = { 0         when n = 0
+;          2^h(n-1)  when n > 0
+
+
+;; Ex. 1.11
+
+; recursive process 
+(define (fr n)
+  (if (< n 3) n
+      (+ (fr (- n 1))
+         (* 2 (fr (- n 2)))
+         (* 3 (fr (- n 3))))))
+
+(fr 0)
+; 0
+(fr 1)
+; 1
+(fr 2)
+; 2
+(fr 3)
+; 4
+(fr 4)
+; 11
+(fr 5)
+; 25
+
+; iterative process -
+; base cases 0:0 1:1 2:2
+(define (fi n)
+  (define (f-iter a b c count)
+    (if (= count 0)
+        c
+        (f-iter (+ a (* b 2) (* c 3)) a b (- count 1))))
+  (f-iter 2 1 0 n))
+
+(fi 0)
+; 0
+(fi 1)
+; 1
+(fi 2)
+; 2
+(fi 3)
+; 4
+(fi 4)
+; 11
+(fi 5)
+; 25
+
+
+;; Ex. 1.12
+
+(define (pascal row col)
+  (cond ((< row col) #f)      ;; better check this illegal case or else
+        ;; interpreters can go on and eat all the ram available
+        ((or (= col 0) (= row col)) 1)
+        (else (+ (pascal (- row 1) (- col 1)) (pascal (- row 1) col)))))
+
+(pascal 0 0)
+; 1
+(pascal 1 0)
+; 1
+(pascal 0 1)
+; #f
+(pascal 4 2)
+; 6
+(pascal 4 1)
+; 4
+(pascal 4 3)
+; 4
+
+
+; Ex. 1.13
+
+
+; Ex. 1.14 - using racket's trace, no time to do elaborate ascii art
+
+(define (count-change amount)
+   (cc amount 5))
+(define (cc amount kinds-of-coins)
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (= kinds-of-coins 0)) 0)
+        (else (+ (cc (- amount
+                        (first-denomination kinds-of-coins))
+                     kinds-of-coins)
+                 (cc amount
+                     (- kinds-of-coins 1))))))
+(define (first-denomination kinds-of-coins)
+  (cond ((= kinds-of-coins 1) 1)
+        ((= kinds-of-coins 2) 5)
+        ((= kinds-of-coins 3) 10)
+        ((= kinds-of-coins 4) 25)
+        ((= kinds-of-coins 5) 50)))
+
+(require racket/trace)
+(trace cc)
+(count-change 11)
+
+;; >(cc 11 5)
+;; > (cc -39 5)
+;; < 0
+;; > (cc 11 4)
+;; > >(cc -14 4)
+;; < <0
+;; > >(cc 11 3)
+;; > > (cc 1 3)
+;; > > >(cc -9 3)
+;; < < <0
+;; > > >(cc 1 2)
+;; > > > (cc -4 2)
+;; < < < 0
+;; > > > (cc 1 1)
+;; > > > >(cc 0 1)
+;; < < < <1
+;; > > > >(cc 1 0)
+;; < < < <0
+;; < < < 1
+;; < < <1
+;; < < 1
+;; > > (cc 11 2)
+;; > > >(cc 6 2)
+;; > > > (cc 1 2)
+;; > > > >(cc -4 2)
+;; < < < <0
+;; > > > >(cc 1 1)
+;; > > > > (cc 0 1)
+;; < < < < 1
+;; > > > > (cc 1 0)
+;; < < < < 0
+;; < < < <1
+;; < < < 1
+;; > > > (cc 6 1)
+;; > > > >(cc 5 1)
+;; > > > > (cc 4 1)
+;; > > > > >(cc 3 1)
+;; > > > > > (cc 2 1)
+;; > > > >[10] (cc 1 1)
+;; > > > >[11] (cc 0 1)
+;; < < < <[11] 1
+;; > > > >[11] (cc 1 0)
+;; < < < <[11] 0
+;; < < < <[10] 1
+;; > > > >[10] (cc 2 0)
+;; < < < <[10] 0
+;; < < < < < 1
+;; > > > > > (cc 3 0)
+;; < < < < < 0
+;; < < < < <1
+;; > > > > >(cc 4 0)
+;; < < < < <0
+;; < < < < 1
+;; > > > > (cc 5 0)
+;; < < < < 0
+;; < < < <1
+;; > > > >(cc 6 0)
+;; < < < <0
+;; < < < 1
+;; < < <2
+;; > > >(cc 11 1)
+;; > > > (cc 10 1)
+;; > > > >(cc 9 1)
+;; > > > > (cc 8 1)
+;; > > > > >(cc 7 1)
+;; > > > > > (cc 6 1)
+;; > > > >[10] (cc 5 1)
+;; > > > >[11] (cc 4 1)
+;; > > > >[12] (cc 3 1)
+;; > > > >[13] (cc 2 1)
+;; > > > >[14] (cc 1 1)
+;; > > > >[15] (cc 0 1)
+;; < < < <[15] 1
+;; > > > >[15] (cc 1 0)
+;; < < < <[15] 0
+;; < < < <[14] 1
+;; > > > >[14] (cc 2 0)
+;; < < < <[14] 0
+;; < < < <[13] 1
+;; > > > >[13] (cc 3 0)
+;; < < < <[13] 0
+;; < < < <[12] 1
+;; > > > >[12] (cc 4 0)
+;; < < < <[12] 0
+;; < < < <[11] 1
+;; > > > >[11] (cc 5 0)
+;; < < < <[11] 0
+;; < < < <[10] 1
+;; > > > >[10] (cc 6 0)
+;; < < < <[10] 0
+;; < < < < < 1
+;; > > > > > (cc 7 0)
+;; < < < < < 0
+;; < < < < <1
+;; > > > > >(cc 8 0)
+;; < < < < <0
+;; < < < < 1
+;; > > > > (cc 9 0)
+;; < < < < 0
+;; < < < <1
+;; > > > >(cc 10 0)
+;; < < < <0
+;; < < < 1
+;; > > > (cc 11 0)
+;; < < < 0
+;; < < <1
+;; < < 3
+;; < <4
+;; < 4
+;; <4
+;; 4
+
+
+;; Ex 1.15
+
+(define (p x) (- (* 3 x) (* 4 (cube x))))
+
+(define (sine angle)
+   (if (not (> (abs angle) 0.1))
+       angle
+       (p (sine (/ angle 3.0)))))
+
+(trace p)
+
+(sine 12.5)
+
+; a) by trace, p is applied 5 times
+
+;; >(p 0.051440329218107005)
+;; <0.153776521096694
+;; >(p 0.153776521096694)
+;; <0.4467840153484446
+;; >(p 0.4467840153484446)
+;; <0.9836111719853284
+;; >(p 0.9836111719853284)
+;; <-0.8557060643295382
+;; >(p -0.8557060643295382)
+;; <-0.060813768577286265
+;; -0.060813768577286265
+
+; b) obsevations with tracing p - 
+;    for a in 3..9     -> 4 calls to p
+;    for a in 9..15    -> 5 calls to p
+;    for a in 15..27   -> 6 calls to p
+
+;    for a change of 3 times in angle, num calls to p changes by 1
+;    number of steps - log(n) nature
+;    growth in space - p needs to be accumulated - p varies as log(n)
+;    hence space too varies logarithmically
+
+

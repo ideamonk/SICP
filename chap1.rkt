@@ -688,8 +688,13 @@
 ; 5
 
 ; this is fibonacci indeed, having found (Tpq)^2 in terms of
-; parameters p,q themselves, we're able to compute Fib(n)
-; logarithmically iteratively
+; manipulation of parameters p,q themselves, we're able to compute
+; Fib(n) logarithmically iteratively, in a way similar to fast-exp
+
+; While exponentiation and multiplication used the idea over numerical
+; computations, this example goes ahead to generalize it over a
+; transformation
 
 
+;; Ex. 1.20
 

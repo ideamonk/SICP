@@ -1,4 +1,4 @@
-#lang racket
+#lang planet neil/sicp
 
 ;;; Ex 1.1
 
@@ -50,6 +50,7 @@
 
 
 ;;; Ex 1.2
+
 (/ (+ 5 
       4 
       (- 2 (- 3 (+ 6 (/ 4 5)))))
@@ -60,6 +61,7 @@
 
 
 ;;; Ex 1.3
+
 (define (square n)
   (* n n))
 
@@ -268,25 +270,25 @@
 
 ;; Ex. 1.10
 
-(define (A x y)
+(define (Ak x y)
   (cond ((= y 0) 0)
         ((= x 0) (* 2 y))
         ((= y 1) 2)
-        (else (A (- x 1)
-                 (A x (- y 1))))))
+        (else (Ak (- x 1)
+                 (Ak x (- y 1))))))
 
-(A 1 10)
+(Ak 1 10)
 ; 1024
 
-(A 2 4)
+(Ak 2 4)
 ; 65536
 
-(A 3 3)
+(Ak 3 3)
 ; 65536
 
-(define (f n) (A 0 n))
-(define (g n) (A 1 n))
-(define (h n) (A 2 n))
+(define (f n) (Ak 0 n))
+(define (g n) (Ak 1 n))
+(define (h n) (Ak 2 n))
 (define (k n) (* 5 n n))
 
 ; by observation -
@@ -398,9 +400,9 @@
         ((= kinds-of-coins 4) 25)
         ((= kinds-of-coins 5) 50)))
 
-(require racket/trace)
-(trace cc)
-(count-change 11)
+;(require racket/trace)
+;(trace cc)
+;(count-change 11)
 
 ;; >(cc 11 5)
 ;; > (cc -39 5)
@@ -524,7 +526,7 @@
        angle
        (p (sine (/ angle 3.0)))))
 
-(trace p)
+;(trace p)
 
 (sine 12.5)
 
@@ -697,4 +699,138 @@
 
 
 ;; Ex. 1.20
+
+; strictly for tracing
+(define (rem a b)
+  (remainder a b))
+
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (rem a b))))
+
+;(trace rem)
+(gcd 206 40)
+
+;; >(rem 206 40)
+;; <6
+;; >(rem 40 6)
+;; <4
+;; >(rem 6 4)
+;; <2
+;; >(rem 4 2)
+;; <0
+;; 2
+; Since we know racket is applicative order, by the trace, remainder
+; gets 4 calls
+
+; In normal order evaluation - fully expand
+; (gcd 206 40)
+
+;; (if (= 40 0) 206
+;;     (gcd 40 (remainder 206 40)))
+
+;; (if (= 40 0) 206
+;;     (if (= (remainder 206 40) 0) 40
+;;         (gcd (remainder 206 40) (remainder 40 (remainder 206 40)))))
+
+;; (if (= 40 0) 206
+;;     (if (= (remainder 206 40) 0) 40
+;;         (if (= (remainder 40 (remainder 206 40)) 0)            ;; is 4
+;;             (remainder 206 40)
+;;             (gcd (remainder 40 (remainder 206 40)) 
+;;                  (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))
+
+;; (if (= 40 0) 206
+;;     (if (= (remainder 206 40) 0) 40
+;;         (if (= (remainder 40 (remainder 206 40)) 0)            
+;;             (remainder 206 40)
+;;             (if (= (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 0) ;; is 2
+;;                 (remainder 40 (remainder 206 40))
+;;                 (gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+;;                      (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))))
+                                 
+;; (if (= 40 0) 206
+;;     (if (= (remainder 206 40) 0) 40
+;;         (if (= (remainder 40 (remainder 206 40)) 0)            
+;;             (remainder 206 40)
+;;             (if (= (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 0) ;; is 2
+;;                 (remainder 40 (remainder 206 40))
+;;                 (if (= (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))) 0) ;; is 0
+;;                     (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+;;                     (gcd (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))
+;;                          (remainder (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+;;                                     (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))))))
+
+; at this point, the inner-most if special form's predicate evaluates
+; to 0, thus ending further gcd calls. By replacing remainder with our
+; rem function, which is set for trace, in the above expression, we
+; find a total of 18 remainder calls. We could also do the manual
+; labour of *carefully* substituting values into the above expression.
+; Careful as in respecting the if special form and not substituting
+; every other remainder call for the count.
+
+;; >(rem 206 40)
+;; <6
+;; >(rem 206 40)
+;; <6
+;; >(rem 40 6)
+;; <4
+;; >(rem 206 40)
+;; <6
+;; >(rem 206 40)
+;; <6
+;; >(rem 40 6)
+;; <4
+;; >(rem 6 4)
+;; <2
+;; >(rem 206 40)
+;; <6
+;; >(rem 40 6)
+;; <4
+;; >(rem 206 40)
+;; <6
+;; >(rem 206 40)
+;; <6
+;; >(rem 40 6)
+;; <4
+;; >(rem 6 4)
+;; <2
+;; >(rem 4 2)
+;; <0
+;; >(rem 206 40)
+;; <6
+;; >(rem 206 40)
+;; <6
+;; >(rem 40 6)
+;; <4
+;; >(rem 6 4)
+;; <2
+
+
+;; Ex. 1.21
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (+ test-divisor 1)))))
+
+(smallest-divisor 199)
+; 199
+
+(smallest-divisor 1999)
+; 1999
+
+(smallest-divisor 19999)
+; 7
+
+
+;; Ex. 1.22
+
 

@@ -553,3 +553,143 @@
 ;    hence space too varies logarithmically
 
 
+;; Ex. 1.16
+
+(define (even? n)
+  (= (remainder n 2) 0))
+
+(define (fast-exp b n)
+  (fe-iter b n 1))
+
+(define (fe-iter b n p)
+  (cond ((= n 0) p)
+        ((even? n) (fe-iter (square b) (/ n 2) p))
+        (else (fe-iter b (- n 1) (* p b)))))
+
+(fast-exp 2 3)
+; 8
+(fast-exp 3 0)
+; 1
+(fast-exp 4 4)
+; 256
+
+
+;; Ex. 1.17
+
+(define (double n)
+  (+ n n))
+
+(define (halve n)
+  (/ n 2))
+
+(define (mul a b)
+  (cond ((= b 0) 0)
+        ((= b 1) a)
+        ((even? b) (mul (double a) (halve b)))
+        (else (+ a (mul a (- b 1))))))
+
+(mul 3 8)
+; 24
+(mul 8 1)
+; 8
+(mul 8 0)
+; 0
+(mul 0 6)
+; 0
+
+; is logarithmic in b, for multiplying with 2b, we need b steps.
+
+
+;; Ex. 1.18
+
+(define (mul-i a b)
+  (mul-iter a b 0))
+
+(define (mul-iter a b p)
+  (cond ((= b 0) p)
+        ((even? b) (mul-iter (double a) (halve b) p))
+        (else (mul-iter a (- b 1) (+ p a)))))
+
+(mul-i 3 8)
+; 24
+(mul-i 8 1)
+; 8
+(mul-i 8 0)
+; 0
+(mul-i 0 6)
+; 0
+
+
+;; Ex. 1.19
+
+; Taking general case, Tpq transforms as -
+;   a <- bq + ap + aq
+;   b <- bp + aq
+
+; Applying Tpq over itself -
+; For a -
+;     a <- (bp+aq)q + (p+q)(bp + ap + aq)
+;       <- bpq + aq^2 + bpq + ap^2 + apq + bq^2 + apq + aq^2
+;       <- 2bpq + 2aq^2 + 2apq + ap^2 + bq^2
+;       <- b(2pq + q^2) + a(2q^2 + 2pq + p^2)
+;
+; For b -
+;     b <- (bp + aq)p + (bq + ap + aq)q
+;       <- bp^2 + apq + bq^2 + apq + aq^2
+;       <- 2apq + aq^2 + bp^2 + bq^2
+;       <- a(2pq + q^2) + b(p^2 + q^2)
+
+; Tp'q' would bring the following transform (grouping a,b) -
+; For a - 
+;     a <- bq' + a(q' + p')
+;
+; For b -
+;     b <- bp' + aq'
+
+; Comparing with (Tpq)^2 transforms -
+; From coefficients of a -
+;    q' = 2pq + q^2                           [1]
+;    q' + p' = 2q^2 + 2pq + p^2               [2]
+;
+; From coefficients of b -
+;    p' = p^2 + q^2                           [3]
+;    q' = 2pq + q^2                           [4]
+
+; adding [3] [4] confirms [2], thus testing with our definition -
+
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+
+(define (fib-iter a b p q count)
+  (cond ((= count 0) b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square p) (square q))               ; computed p'
+                   (+ (* 2 p q) (square q))                ; computed q'
+                   (/ count 2)))
+        (else (fib-iter (+ (* b q) (* a q) (* a p))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
+
+(fib 0)
+; 0
+(fib 1)
+; 1
+(fib 2)
+; 1
+(fib 3)
+; 2
+(fib 4)
+; 3
+(fib 5)
+; 5
+
+; this is fibonacci indeed, having found (Tpq)^2 in terms of
+; parameters p,q themselves, we're able to compute Fib(n)
+; logarithmically iteratively
+
+
+

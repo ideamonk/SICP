@@ -833,4 +833,273 @@
 
 ;; Ex. 1.22
 
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (search-for-primes a b primality-test?)
+  (define (timed-prime-test n)
+    (newline)
+    (display n)
+    (start-prime-test n (runtime)))
+  (define (start-prime-test n start-time)
+    (if (primality-test? n)
+        (report-prime (- (runtime) start-time))))
+  (define (report-prime elapsed-time)
+    (display " *** ")
+    (display elapsed-time))
+
+  (cond ((> a b) #f)
+        ((even? a) (search-for-primes (inc a) b primality-test?))
+        (else (timed-prime-test a)
+              (search-for-primes (+ a 2) b primality-test?))))
+
+; by observation in repl, for first 3 > 1000
+(search-for-primes 1000 1020 prime?)
+; averages   8.33 ms
+
+; first 3 > 10000
+(search-for-primes 10000 10038 prime?)
+; averages  31.33 ms
+
+; first 3 > 100000
+(search-for-primes 100000 100044 prime?)
+; averages  90.00 ms
+
+; first 3 > 1000000
+(search-for-primes 1000000 1000038 prime?)
+; averages 281.67 ms
+
+; first 3 > 10000000
+(search-for-primes 10000000 10000104 prime?)
+; averages 829.00 ms
+
+; n             time          ratio
+; 1000            8.33          -
+; 10000          31.33          3.7611
+; 100000         90.00          2.8726
+; 1000000       281.67          3.1296
+; 10000000      829.00          2.9431
+; -------------------------------------
+;                     average - 3.1766
+
+; sqrt 10 ~= 3.162277
+; indeed the average ratio comes close to sqrt of 10
+; although, results vary individually, their average closeness to
+; square root of 10 indicates that programs on my machine run in time
+; proportional to the number of steps required for computation
+
+
+; Ex. 1.23
+
+(define (next-n n)
+  (if (= n 2) 3
+      (+ n 2)))
+
+(define (smallest-divisor-improved n)
+  (find-divisor-generic n 2 next-n))
+
+(define (find-divisor-generic n test-divisor next)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor-generic n (next test-divisor) next))))
+
+(smallest-divisor-improved 199)
+; 199
+
+(smallest-divisor-improved 1999)
+; 1999
+
+(smallest-divisor-improved 19999)
+; 7
+
+; turned search-for-prime into a more generic function, thus testing
+; with prime-improved -
+
+(define (prime-improved? n)
+  (= n (smallest-divisor-improved n)))
+
+(search-for-primes 1000 1020 prime-improved?)
+; averages   5.33 ms
+
+; first 3 > 10000
+(search-for-primes 10000 10038 prime-improved?)
+; averages  15.33 ms
+
+; first 3 > 100000
+(search-for-primes 100000 100044 prime-improved?)
+; averages  48.33 ms
+
+; first 3 > 1000000
+(search-for-primes 1000000 1000038 prime-improved?)
+; averages 150.33 ms
+
+; first 3 > 10000000
+(search-for-primes 10000000 10000104 prime-improved?)
+; averages 482.33 ms
+
+; n             time          ratio - prevtime/newtime
+; 1000            5.33          1.5628
+; 10000          15.33          2.0437
+; 100000         48.33          1.8621
+; 1000000       150.33          1.8736
+; 10000000      482.33          1.7187
+; -------------------------------------
+; average -                     1.8121
+
+; We get a close to 2x, i.e. ~1.8x improvement, but not 2x as we were
+; expecting. In general it tends to 1.8x, this might be due to the
+; fact that - we replaced a primitive function + with a branched and
+; more complex function - resulting in additional overhead.
+
+
+;; Ex. 1.24
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m ))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m))))
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(define (fast-prime-tester? n)
+  (fast-prime? n 100))
+
+; using fast-prime-tester for measuring -
+
+(search-for-primes 1000 1020 fast-prime-tester?)
+; averages  340.33 ms
+
+; first 3 > 10000
+(search-for-primes 10000 10038 fast-prime-tester?)
+; averages  484.33 ms
+
+; first 3 > 100000
+(search-for-primes 100000 100044 fast-prime-tester?)
+; averages  587.00 ms
+
+; first 3 > 1000000
+(search-for-primes 1000000 1000038 fast-prime-tester?)
+; averages  655.00 ms
+
+; first 3 > 10000000
+(search-for-primes 10000000 10000104 fast-prime-tester?)
+; averages  809.00 ms
+
+; Since we got best performance on prime-improved?, lets compare
+; fermat's with that -
+
+; n             time          ratio - fermat/improved
+; 1000          340.33          63.85
+; 10000         484.33          31.59
+; 100000        587.00          12.14
+; 1000000       655.00           4.35
+; 10000000      809.00           1.67
+; -------------------------------------
+
+; fermat's performs poorly for smaller n, compared to improved
+; versions. Let's consider fermat's nature by comparing ratios with
+; successive calls to itself -
+
+; n             time          ratio - current/prev
+; 1000          340.33          -
+; 10000         484.33          1.4231
+; 100000        587.00          1.2119
+; 1000000       655.00          1.1158
+; 10000000      809.00          1.2351
+; -------------------------------------
+; average                       1.2487
+
+; T-1000000 vs T-1000 -> is ~2.37x. Time(steps) grow slowly compared
+; to growth in N, indicating approx logarithmic growth
+
+
+;; Ex. 1.25
+
+; expmod uses breaks the problem into half-size pieces for even cases
+; and does that by successive squaring, but on the other hand,
+; Alyssa's version would evaluate (fast-exp base exp) first, which
+; could cause it to perform poorer in cases of large base,exp values
+; in comparison to expmod's working. Thus, she's not correct and this
+; wouldn't serve as well for fast prime test.
+
+
+; Ex. 1.26
+
+;; (define (expmod base exp m)
+;;   (cond ((= exp 0) 1)
+;;         ((even? exp)
+;;          (remainder (* (expmod base (/ exp 2) m)
+;;                        (expmod base (/ exp 2) m))
+;;                        m))
+;;          (else
+;;           (remainder (* base (expmod base
+;;                                      (- exp 1)
+;;                                      m))
+;;                      m))))
+
+; One obviously visible difference is that Reasoner's algorithm would
+; do two computations of (expmod base (/ exp 2) m) instead of old
+; version where once computed, this value was re-used in squaring.
+; While with square we were able to reduce problem size by 2 in one
+; call, here we do reduce problem size by two, but in turn double the
+; number of calls. So, any benefits of halving the problem size to be
+; had is cancelled by duplicated computation, in turn taking away the
+; logarithmic nature, and turning it into O(n)
+; This has repeated computations akin to fibonacci's call graphs.
+
+
+; Ex. 1.27
+
+;; (define (fermat-test-full n)
+;;   (define (try-it a)
+;;     (if (= a 1) #t
+;;         (and (= (expmod a n n) a) (try-it (- a 1)))))
+;;   (try-it (- n 1)))
+
+; This implementation could actually short-circuit on a false result
+; instead of evaluating all expmods and then AND-ing the bools over.
+; Improved version -
+
+(define (fermat-test-full n)
+  (define (try-it a)
+    (cond ((= a 1) #t)
+          ((not (= (expmod a n n) a)) #f)
+          (else (try-it (- a 1)))))
+  (try-it (- n 1)))
+
+(fermat-test-full 900)
+; #f
+
+(fermat-test-full 561)
+; #t
+
+(fermat-test-full 1105)
+; #t
+
+(fermat-test-full 1729)
+; #t
+
+(fermat-test-full 2465)
+; #t
+
+(fermat-test-full 2821)
+; #t
+
+(fermat-test-full 6601)
+; #t
+
+
+;; Ex. 1.28
 

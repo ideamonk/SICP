@@ -1103,3 +1103,45 @@
 
 ;; Ex. 1.28
 
+; checks and returns signal via 0 as in hint
+(define (non-trivial x n)
+  (if (not (or (= x 1)
+           (= x (- n 1))
+           (not (= (remainder (square x) n) 1))))
+      0
+      (remainder (square x) n)))
+
+; modified to check for non-trivial roots
+(define (expmod-miller base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (non-trivial (expmod-miller base (/ exp 2) m) m))
+        (else
+         (remainder (* base (expmod-miller base (- exp 1) m))
+                    m))))
+
+(define (miller-test n)
+  (define (try-it a)
+    (= (expmod-miller a (- n 1) n) 1))
+  (try-it (+ 2 (random (- n 1)))))
+
+(miller-test 4)
+; #f
+
+(miller-test 199)
+; #t
+
+(miller-test 1999)
+; #t
+
+(miller-test 561)
+; #f
+
+(miller-test 6601)
+; #f
+
+(miller-test 2821)
+; #f
+
+; ^ is not fooled by Charmichael numbers
+
